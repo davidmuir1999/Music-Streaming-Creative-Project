@@ -1,3 +1,5 @@
+import { loader} from "../assets";
+
 const Loader = () => (
   <div>Loader</div>
 );
