@@ -1,46 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React from 'react';
+import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { DetailsHeader, Error, Loader, RelatedSongs } from '../components';
 
-import { Error, Loader, SongCard } from '../components';
-import { useGetSongsByCountryQuery } from '../redux/services/shazamCore';
+import { useGetArtistDetailsQuery } from '../redux/services/shazamCore';
 
-const CountryTracks = () => {
-  const [country, setCountry] = useState('');
-  const [loading, setLoading] = useState(true);
+const ArtistDetails = () => {
+  const { id: artistId } = useParams();
   const { activeSong, isPlaying } = useSelector((state) => state.player);
-  const { data, isFetching, error } = useGetSongsByCountryQuery(country);
+  const { data: artistData, isFetching: isFetchingArtistDetails, error } = useGetArtistDetailsQuery(artistId);
 
-  useEffect(() => {
-    axios
-      .get(`https://geo.ipify.org/api/v2/country?apiKey=${import.meta.env.VITE_GEO_API_KEY}`)
-      .then((res) => setCountry(res?.data?.location.country))
-      .catch((err) => console.log(err))
-      .finally(() => setLoading(false));
-  }, [country]);
+  if (isFetchingArtistDetails) return <Loader title="Loading artist details..." />;
 
-  if (isFetching && loading) return <Loader title="Loading Songs around you..." />;
-
-  if (error && country !== '') return <Error />;
+  if (error) return <Error />;
 
   return (
     <div className="flex flex-col">
-      <h2 className="font-bold text-3xl text-white text-left mt-4 mb-10">Around you <span className="font-black">{country}</span></h2>
+      <DetailsHeader
+        artistId={artistId}
+        artistData={artistData?.data[0]}
+      />
 
-      <div className="flex flex-wrap sm:justify-start justify-center gap-8">
-        {data?.map((song, i) => (
-          <SongCard
-            key={song.key}
-            song={song}
-            isPlaying={isPlaying}
-            activeSong={activeSong}
-            data={data}
-            i={i}
-          />
-        ))}
-      </div>
+      <RelatedSongs
+        data={artistData?.data[0].views['top-songs']?.data}
+        artistId={artistId}
+        isPlaying={isPlaying}
+        activeSong={activeSong}
+      />
     </div>
   );
 };
 
-export default CountryTracks;
+export default ArtistDetails;
